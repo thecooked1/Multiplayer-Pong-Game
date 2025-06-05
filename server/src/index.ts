@@ -17,7 +17,7 @@ import {
     BALL_SPEED_X,
     BALL_SPEED_Y,
     PADDLE_SPEED,
-} from '../../shared/types'; 
+} from '../../client/src/shared/types'; 
 
 const app = express();
 const httpServer = createServer(app);
@@ -85,6 +85,33 @@ function startGameLoop() {
         game.lastUpdateTime = now;
 
         // Core Game Logic
+
+        if (game.players[PlayerNumber.One]) {
+            const paddle1 = game.players[PlayerNumber.One]!.paddle;
+            if (game.players[PlayerNumber.One]!.movingUp) {
+                paddle1.y -= PADDLE_SPEED;
+            }
+            if (game.players[PlayerNumber.One]!.movingDown) {
+                paddle1.y += PADDLE_SPEED;
+            }
+            // Keep paddle within bounds
+            paddle1.y = Math.max(0, Math.min(GAME_HEIGHT - PADDLE_HEIGHT, paddle1.y));
+        }
+
+        if (game.players[PlayerNumber.Two]) {
+            const paddle2 = game.players[PlayerNumber.Two]!.paddle;
+            if (game.players[PlayerNumber.Two]!.movingUp) {
+                paddle2.y -= PADDLE_SPEED;
+            }
+            if (game.players[PlayerNumber.Two]!.movingDown) {
+                paddle2.y += PADDLE_SPEED;
+            }
+            // Keep paddle within bounds
+            paddle2.y = Math.max(0, Math.min(GAME_HEIGHT - PADDLE_HEIGHT, paddle2.y));
+        }
+
+
+
         // 1. Ball Movement
         game.ball.x += game.ball.dx * deltaTime * 60; 
         game.ball.y += game.ball.dy * deltaTime * 60;
@@ -159,6 +186,8 @@ io.on('connection', (socket) => {
             paddle: { x: 0, y: (GAME_HEIGHT - PADDLE_HEIGHT) / 2, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
             score: 0,
             ready: false,
+            movingUp: false,    
+            movingDown: false,
         };
         socket.data.playerNumber = PlayerNumber.One;
         socket.emit('playerAssigned', PlayerNumber.One);
@@ -172,6 +201,8 @@ io.on('connection', (socket) => {
             paddle: { x: GAME_WIDTH - PADDLE_WIDTH, y: (GAME_HEIGHT - PADDLE_HEIGHT) / 2, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
             score: 0,
             ready: false,
+            movingUp: false,    
+            movingDown: false,
         };
         socket.data.playerNumber = PlayerNumber.Two;
         socket.emit('playerAssigned', PlayerNumber.Two);
@@ -205,18 +236,32 @@ io.on('connection', (socket) => {
     });
 
     //Handle Paddle Movement from Client
-    socket.on('paddleMove', (direction) => {
+    socket.on('paddleMoveStart', (direction) => {
         const playerNum = socket.data.playerNumber;
         if (playerNum && game.players[playerNum] && game.status === GameStateStatus.Playing) {
-            const paddle = game.players[playerNum]!.paddle;
             if (direction === 'up') {
-                paddle.y -= PADDLE_SPEED;
-            } else {
-                paddle.y += PADDLE_SPEED;
+                game.players[playerNum]!.movingUp = true;
+                game.players[playerNum]!.movingDown = false; 
+            } else { 
+                game.players[playerNum]!.movingDown = true;
+                game.players[playerNum]!.movingUp = false;
             }
-            paddle.y = Math.max(0, Math.min(GAME_HEIGHT - PADDLE_HEIGHT, paddle.y));
+            // console.log(`Player ${playerNum} started moving ${direction}`); // For debugging
         }
     });
+
+    socket.on('paddleMoveStop', (direction) => {
+        const playerNum = socket.data.playerNumber;
+        if (playerNum && game.players[playerNum] && game.status === GameStateStatus.Playing) {
+            if (direction === 'up') {
+                game.players[playerNum]!.movingUp = false;
+            } else { 
+                game.players[playerNum]!.movingDown = false;
+            }
+            // console.log(`Player ${playerNum} stopped moving ${direction}`); // For debugging
+        }
+    });
+
 
     //Handle Disconnection
     socket.on('disconnect', () => {

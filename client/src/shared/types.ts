@@ -40,7 +40,9 @@ export interface PlayerState {
     playerNumber: PlayerNumber;
     paddle: PaddleState;
     score: number;
-    ready: boolean; 
+    ready: boolean;
+    movingUp: boolean;
+    movingDown: boolean;
 }
 
 export interface GameState {
@@ -60,7 +62,8 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-    paddleMove: (direction: 'up' | 'down') => void;
+    paddleMoveStart: (direction: 'up' | 'down') => void;
+    paddleMoveStop: (direction: 'up' | 'down') => void;
     playerReady: () => void;
 }
 

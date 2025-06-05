@@ -9,6 +9,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts", "../shared/**/*.ts"], 
+  "include": ["src/**/*.ts", "../client/src/shared/**/*.ts"], 
   "exclude": ["node_modules"] 
 }
